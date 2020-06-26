@@ -76,4 +76,3 @@ func typName(typDef interface{}) (string, bool) {
 	}
 	return "", false
 }
-
