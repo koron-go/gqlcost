@@ -36,7 +36,7 @@ func init() {
                 // cost for fields of "Query" type.
                 Fields: gqlcost.FieldsCost{
                     "todoList": gqlcost.Cost{
-                        UseMultipliers: true
+                        UseMultipliers: true,
                         Complexity:     2,
                         Multipliers:    []string{"limit"},
                     },
