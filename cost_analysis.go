@@ -52,13 +52,19 @@ func (ca *costAnalysis) opDefEnter(p visitor.VisitFuncParams) (string, interface
 	}
 	switch od.GetOperation() {
 	case "query":
-		ca.cost += ca.computeNodeCost(od, ca.ctx.Schema().QueryType(), nil)
+		if op := ca.ctx.Schema().QueryType(); op != nil {
+			ca.cost += ca.computeNodeCost(od, op, nil)
+		}
 		return visitor.ActionNoChange, nil
 	case "mutation":
-		ca.cost += ca.computeNodeCost(od, ca.ctx.Schema().MutationType(), nil)
+		if op := ca.ctx.Schema().MutationType(); op != nil {
+			ca.cost += ca.computeNodeCost(od, op, nil)
+		}
 		return visitor.ActionNoChange, nil
 	case "subscription":
-		ca.cost += ca.computeNodeCost(od, ca.ctx.Schema().SubscriptionType(), nil)
+		if op := ca.ctx.Schema().SubscriptionType(); op != nil {
+			ca.cost += ca.computeNodeCost(od, op, nil)
+		}
 		return visitor.ActionNoChange, nil
 	default:
 		return visitor.ActionSkip, nil
