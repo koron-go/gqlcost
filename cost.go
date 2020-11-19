@@ -25,18 +25,17 @@ type TypeCost struct {
 // CostMap provides costs for type and fields.
 type CostMap map[string]TypeCost
 
-func (m CostMap) getCost(parentTyp string, node *ast.Field) *Cost {
-	if node == nil || node.Name == nil {
+func (m CostMap) getCost(contextTypeName string, fieldNode *ast.Field, fieldTypeName string) *Cost {
+	if fieldNode == nil || fieldNode.Name == nil {
 		return nil
 	}
-	fieldName := node.Name.Value
-	typeCost, ok := m[parentTyp]
-	if !ok {
-		return nil
+	if typeCost, ok := m[contextTypeName]; ok {
+		if fieldCost, ok := typeCost.Fields[fieldNode.Name.Value]; ok {
+			return &fieldCost
+		}
 	}
-	c, ok := typeCost.Fields[fieldName]
-	if !ok {
+	if typeCost, ok := m[fieldTypeName]; ok {
 		return typeCost.Cost
 	}
-	return &c
+	return nil
 }

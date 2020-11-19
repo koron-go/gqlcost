@@ -70,9 +70,9 @@ func copyInts(src []int) []int {
 	return dst
 }
 
-func typName(typDef interface{}) (string, bool) {
+func typName(typDef interface{}) string {
 	if x, ok := typDef.(interface{ Name() string }); ok {
-		return x.Name(), true
+		return x.Name()
 	}
-	return "", false
+	return ""
 }

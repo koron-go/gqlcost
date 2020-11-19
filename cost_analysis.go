@@ -79,6 +79,7 @@ func (ca *costAnalysis) opDefLeave(p visitor.VisitFuncParams) (string, interface
 	if ca.cost > ca.opts.MaximumCost {
 		ca.reportError(fmt.Sprintf("The query exceeds the maximum cost of %d. Actual cost is %d", ca.opts.MaximumCost, ca.cost), []ast.Node{od})
 	}
+	//log.Printf("GraphQL COST=%d", ca.cost)
 	return visitor.ActionNoChange, nil
 }
 
@@ -131,7 +132,7 @@ func (ca *costAnalysis) computeNodeCost(node ast.Node, typDef interface{}, paren
 			if childNode.Name == nil {
 				break
 			}
-			n, _ := typName(typDef)
+			//log.Printf("field: %q %q %+v", childNode.Name.Value, typName(typDef), parentMultipliers)
 			field, ok := fm[childNode.Name.Value]
 			if !ok {
 				break
@@ -144,11 +145,9 @@ func (ca *costAnalysis) computeNodeCost(node ast.Node, typDef interface{}, paren
 				break
 			}
 
-			var costMapArgs nodeCostConfig
-			if n, ok := typName(typDef); ok {
-				fieldArgs := getArgumentValues(field.Args, childNode.Arguments, ca.opts.Valiables)
-				costMapArgs = ca.getArgsFromCostMap(childNode, n, fieldArgs)
-			}
+			costMapArgs := ca.getArgsFromCostMap(childNode, typName(typDef), typName(field.Type),
+				getArgumentValues(field.Args, childNode.Arguments, ca.opts.Valiables))
+
 			multipliers := copyInts(parentMultipliers)
 			nodeCost, multipliers = ca.computeCost(costMapArgs, multipliers)
 			nodeCost += ca.computeNodeCost(childNode, field.Type, multipliers)
@@ -205,8 +204,8 @@ type nodeCostConfig struct {
 	multipliers    []int
 }
 
-func (ca *costAnalysis) getArgsFromCostMap(node *ast.Field, parentTyp string, fieldArgs map[string]interface{}) (ncc nodeCostConfig) {
-	cost := ca.opts.CostMap.getCost(parentTyp, node)
+func (ca *costAnalysis) getArgsFromCostMap(node *ast.Field, parentTyp, fieldType string, fieldArgs map[string]interface{}) (ncc nodeCostConfig) {
+	cost := ca.opts.CostMap.getCost(parentTyp, node, fieldType)
 	if cost == nil {
 		return nodeCostConfig{}
 	}
@@ -228,6 +227,7 @@ func (ca *costAnalysis) computeCost(ncc nodeCostConfig, parentMultipliers []int)
 	}
 
 	if len(ncc.multipliers) > 0 {
+		//log.Printf("  ncc.multipliers=%+v", ncc.multipliers)
 		mul := 0
 		for _, v := range ncc.multipliers {
 			mul += v

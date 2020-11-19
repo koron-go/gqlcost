@@ -405,9 +405,9 @@ func TestFieldOverrideTypeCost(t *testing.T) {
 		MaximumCost: 100,
 		CostMap: CostMap{
 			"Query": {
-				Cost:   &Cost{Complexity: 3},
 				Fields: FieldsCost{"overrideTypeCost": {Complexity: 2}},
 			},
+			"TypeCost": {Cost: &Cost{Complexity: 3}},
 		},
 	}, 2)
 }
@@ -416,7 +416,7 @@ func TestCostType(t *testing.T) {
 	testCost(t, `query { getCostByType }`, AnalysisOptions{
 		MaximumCost: 100,
 		CostMap: CostMap{
-			"Query": {Cost: &Cost{Complexity: 3}},
+			"TypeCost": {Cost: &Cost{Complexity: 3}},
 		},
 	}, 3)
 }
