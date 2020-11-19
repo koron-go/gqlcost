@@ -129,5 +129,6 @@ func getArgumentValues(
 			results[argDef.PrivateName] = tmp
 		}
 	}
+	//log.Printf("getArgumentValues()=%+v", results)
 	return results
 }

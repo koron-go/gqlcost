@@ -6,9 +6,37 @@ import (
 
 // Cost provides each cost value for type.field
 type Cost struct {
-	UseMultipliers bool     `json:"useMultipliers,omitempty"`
-	Complexity     int      `json:"complexity,omitempty"`
-	Multipliers    []string `json:"multipliers,omitempty"`
+	// UseMultipliers is flag to use multiplier.
+	// Multipliers and MultiplierFunc are refered only when this is true.
+	UseMultipliers bool `json:"useMultipliers,omitempty"`
+
+	// Complexity define default complexity of field or type.
+	Complexity int `json:"complexity,omitempty"`
+
+	// Multipliers enumerates name of arguments to be used to calculate
+	// multiplier.
+	Multipliers []string `json:"multipliers,omitempty"`
+
+	// MultiplierFunc is for customizing multiplier calculation.
+	// When it available Multipliers is ignored.
+	MultiplierFunc func(map[string]interface{}) int
+}
+
+func (c Cost) getMultiplier(args map[string]interface{}) int {
+	if c.MultiplierFunc != nil {
+		return c.MultiplierFunc(args)
+	}
+	var mul int
+	for _, n := range c.Multipliers {
+		v, ok := args[n]
+		if !ok {
+			continue
+		}
+		if n, ok := toNumber(v); ok {
+			mul += n
+		}
+	}
+	return mul
 }
 
 // FieldsCost provides costs for each fields.

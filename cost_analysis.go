@@ -201,7 +201,7 @@ func (ca *costAnalysis) computeNodeCost(node ast.Node, typDef interface{}, paren
 type nodeCostConfig struct {
 	useMultipliers bool
 	complexity     int
-	multipliers    []int
+	multiplier     int
 }
 
 func (ca *costAnalysis) getArgsFromCostMap(node *ast.Field, parentTyp, fieldType string, fieldArgs map[string]interface{}) (ncc nodeCostConfig) {
@@ -212,7 +212,7 @@ func (ca *costAnalysis) getArgsFromCostMap(node *ast.Field, parentTyp, fieldType
 	return nodeCostConfig{
 		useMultipliers: cost.UseMultipliers,
 		complexity:     cost.Complexity,
-		multipliers:    ca.getMultipliersFromString(cost.Multipliers, fieldArgs),
+		multiplier:     cost.getMultiplier(fieldArgs),
 	}
 }
 
@@ -226,13 +226,8 @@ func (ca *costAnalysis) computeCost(ncc nodeCostConfig, parentMultipliers []int)
 		return ncc.complexity, parentMultipliers
 	}
 
-	if len(ncc.multipliers) > 0 {
-		//log.Printf("  ncc.multipliers=%+v", ncc.multipliers)
-		mul := 0
-		for _, v := range ncc.multipliers {
-			mul += v
-		}
-		parentMultipliers = append(parentMultipliers, mul)
+	if ncc.multiplier != 0 {
+		parentMultipliers = append(parentMultipliers, ncc.multiplier)
 	}
 
 	acc := ncc.complexity
@@ -241,19 +236,4 @@ func (ca *costAnalysis) computeCost(ncc nodeCostConfig, parentMultipliers []int)
 	}
 
 	return acc, parentMultipliers
-}
-
-func (ca *costAnalysis) getMultipliersFromString(multipliers []string, fieldArgs map[string]interface{}) []int {
-	muls := make([]int, 0, len(multipliers))
-	for _, n := range multipliers {
-		v, ok := fieldArgs[n]
-		if !ok {
-			continue
-		}
-		if n, ok := toNumber(v); ok && n != 0 {
-			muls = append(muls, n)
-			continue
-		}
-	}
-	return muls
 }
