@@ -99,6 +99,9 @@ func (ca *costAnalysis) getSectionSet(node ast.Node) (*ast.SelectionSet, bool) {
 }
 
 func (ca *costAnalysis) getFieldDefinitionMap(typDef interface{}) graphql.FieldDefinitionMap {
+	if x, ok := typDef.(*graphql.List); ok {
+		typDef = x.OfType
+	}
 	if x, ok := typDef.(interface {
 		Fields() graphql.FieldDefinitionMap
 	}); ok {
@@ -128,6 +131,7 @@ func (ca *costAnalysis) computeNodeCost(node ast.Node, typDef interface{}, paren
 			if childNode.Name == nil {
 				break
 			}
+			n, _ := typName(typDef)
 			field, ok := fm[childNode.Name.Value]
 			if !ok {
 				break
