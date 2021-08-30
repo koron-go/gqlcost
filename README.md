@@ -1,6 +1,6 @@
 # koron-go/gqlcost
 
-[![GoDoc](https://godoc.org/github.com/koron-go/gqlcost?status.svg)](https://godoc.org/github.com/koron-go/gqlcost)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/koron-go/gqlcost)](https://pkg.go.dev/github.com/koron-go/gqlcost)
 [![Actions/Go](https://github.com/koron-go/gqlcost/workflows/Go/badge.svg)](https://github.com/koron-go/gqlcost/actions?query=workflow%3AGo)
 [![Go Report Card](https://goreportcard.com/badge/github.com/koron-go/gqlcost)](https://goreportcard.com/report/github.com/koron-go/gqlcost)
 
