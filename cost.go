@@ -7,7 +7,7 @@ import (
 // Cost provides each cost value for type.field
 type Cost struct {
 	// UseMultipliers is flag to use multiplier.
-	// Multipliers and MultiplierFunc are refered only when this is true.
+	// Multipliers and MultiplierFunc are referred only when this is true.
 	UseMultipliers bool `json:"useMultipliers,omitempty"`
 
 	// Complexity define default complexity of field or type.
