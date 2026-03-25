@@ -107,6 +107,19 @@ func init() {
 	queryType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
 		Fields: graphql.Fields{
+			"inner": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.NewObject(graphql.ObjectConfig{
+					Name: "InnerType",
+					Fields: graphql.Fields{
+						"name": &graphql.Field{
+							Type: graphql.String,
+						},
+					},
+				})),
+				Resolve: func(_ graphql.ResolveParams) (interface{}, error) {
+					return map[string]interface{}{"name": "John"}, nil
+				},
+			},
 			"defaultCost": &graphql.Field{
 				Type: graphql.Int,
 				Resolve: func(_ graphql.ResolveParams) (interface{}, error) {
@@ -232,7 +245,23 @@ func TestDefaultCost(t *testing.T) {
 		DefaultCost: 12,
 	}, 12)
 }
-
+func TestNotNullableCost(t *testing.T) {
+	testCost(t, `query { inner { name } }`, AnalysisOptions{
+		MaximumCost: 100,
+		CostMap: CostMap{
+			"Query": {
+				Fields: FieldsCost{
+					"inner": {Complexity: 1},
+				},
+			},
+			"InnerType!": {
+				Fields: FieldsCost{
+					"name": {Complexity: 10},
+				},
+			},
+		},
+	}, 11)
+}
 func TestCustomCost(t *testing.T) {
 	testCost(t, `query { customCost }`, AnalysisOptions{
 		MaximumCost: 100,
