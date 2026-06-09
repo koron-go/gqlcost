@@ -103,6 +103,9 @@ func (ca *costAnalysis) getFieldDefinitionMap(typDef interface{}) graphql.FieldD
 	if x, ok := typDef.(*graphql.List); ok {
 		typDef = x.OfType
 	}
+	if x, ok := typDef.(*graphql.NonNull); ok {
+		typDef = x.OfType
+	}
 	if x, ok := typDef.(interface {
 		Fields() graphql.FieldDefinitionMap
 	}); ok {
