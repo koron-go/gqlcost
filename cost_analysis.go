@@ -100,11 +100,16 @@ func (ca *costAnalysis) getSectionSet(node ast.Node) (*ast.SelectionSet, bool) {
 }
 
 func (ca *costAnalysis) getFieldDefinitionMap(typDef interface{}) graphql.FieldDefinitionMap {
-	if x, ok := typDef.(*graphql.List); ok {
-		typDef = x.OfType
-	}
-	if x, ok := typDef.(*graphql.NonNull); ok {
-		typDef = x.OfType
+	for {
+		if x, ok := typDef.(*graphql.List); ok {
+			typDef = x.OfType
+			continue
+		}
+		if x, ok := typDef.(*graphql.NonNull); ok {
+			typDef = x.OfType
+			continue
+		}
+		break
 	}
 	if x, ok := typDef.(interface {
 		Fields() graphql.FieldDefinitionMap

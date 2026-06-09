@@ -104,20 +104,28 @@ func init() {
 		},
 	})
 
+	innerType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "InnerType",
+		Fields: graphql.Fields{
+			"name": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+
 	queryType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
 		Fields: graphql.Fields{
 			"inner": &graphql.Field{
-				Type: graphql.NewNonNull(graphql.NewObject(graphql.ObjectConfig{
-					Name: "InnerType",
-					Fields: graphql.Fields{
-						"name": &graphql.Field{
-							Type: graphql.String,
-						},
-					},
-				})),
+				Type: graphql.NewNonNull(innerType),
 				Resolve: func(_ graphql.ResolveParams) (interface{}, error) {
 					return map[string]interface{}{"name": "John"}, nil
+				},
+			},
+			"innerList": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.NewList(innerType)),
+				Resolve: func(_ graphql.ResolveParams) (interface{}, error) {
+					return []map[string]interface{}{{"name": "Alice"}}, nil
 				},
 			},
 			"defaultCost": &graphql.Field{
@@ -256,6 +264,24 @@ func TestNotNullableCost(t *testing.T) {
 				},
 			},
 			"InnerType!": {
+				Fields: FieldsCost{
+					"name": {Complexity: 10},
+				},
+			},
+		},
+	}, 11)
+}
+
+func TestNonNullList(t *testing.T) {
+	testCost(t, `query { innerList { name } }`, AnalysisOptions{
+		MaximumCost: 100,
+		CostMap: CostMap{
+			"Query": {
+				Fields: FieldsCost{
+					"innerList": {Complexity: 1},
+				},
+			},
+			"[InnerType]!": {
 				Fields: FieldsCost{
 					"name": {Complexity: 10},
 				},
