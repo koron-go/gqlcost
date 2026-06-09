@@ -14,22 +14,16 @@ type costAnalysis struct {
 	opts AnalysisOptions
 	ctx  *graphql.ValidationContext
 	cost int
-
-	defaultComplexity int
 }
 
 func newCostAnalysis(ctx *graphql.ValidationContext, opts AnalysisOptions) *costAnalysis {
 	ca := &costAnalysis{
-		opts:              opts,
-		ctx:               ctx,
-		defaultComplexity: 1,
+		opts: opts,
+		ctx:  ctx,
 	}
 	cr := ca.opts.ComplexityRange
 	if cr.Min != 0 && cr.Max != 0 && cr.Min > cr.Max {
 		ca.reportError("Invalid minimum and maximum complexity", nil)
-	}
-	if ca.opts.ComplexityRange.Min != 0 {
-		ca.defaultComplexity = ca.opts.ComplexityRange.Min
 	}
 	return ca
 }
