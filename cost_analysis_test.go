@@ -113,6 +113,27 @@ func init() {
 		},
 	})
 
+	mutationType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Mutation",
+		Fields: graphql.Fields{
+			"setName": &graphql.Field{
+				Type: graphql.String,
+				Args: graphql.FieldConfigArgument{
+					"name": &graphql.ArgumentConfig{Type: graphql.String},
+				},
+			},
+		},
+	})
+
+	subscriptionType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Subscription",
+		Fields: graphql.Fields{
+			"nameChanged": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+
 	queryType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
 		Fields: graphql.Fields{
@@ -190,7 +211,11 @@ func init() {
 		},
 	})
 
-	sch, err := graphql.NewSchema(graphql.SchemaConfig{Query: queryType})
+	sch, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query:        queryType,
+		Mutation:     mutationType,
+		Subscription: subscriptionType,
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -611,3 +636,42 @@ func TestMultipleRecusive(t *testing.T) {
 }
 
 // TODO: add tests
+
+func TestMutationOperation(t *testing.T) {
+	testCost(t, `mutation { setName(name: "foo") }`, AnalysisOptions{
+		MaximumCost: 100,
+		DefaultCost: 5,
+	}, 5)
+}
+
+func TestSubscriptionOperation(t *testing.T) {
+	testCost(t, `subscription { nameChanged }`, AnalysisOptions{
+		MaximumCost: 100,
+		DefaultCost: 5,
+	}, 5)
+}
+
+func TestInlineFragment_NoTypeCondition(t *testing.T) {
+	testCost(t, `query { inner { ... { name } } }`, AnalysisOptions{
+		MaximumCost: 100,
+		DefaultCost: 3,
+	}, 6)
+}
+
+func TestMultiplierFunc(t *testing.T) {
+	testCost(t, `query { customCostWithResolver(limit: 10) }`, AnalysisOptions{
+		MaximumCost: 100,
+		CostMap: CostMap{
+			"Query": {Fields: FieldsCost{
+				"customCostWithResolver": {
+					UseMultipliers: true,
+					Complexity:     7,
+					MultiplierFunc: func(args map[string]interface{}) int {
+						v, _ := args["limit"].(int)
+						return v
+					},
+				},
+			}},
+		},
+	}, 70)
+}
