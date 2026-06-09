@@ -220,7 +220,7 @@ func (ca *costAnalysis) getArgsFromCostMap(node *ast.Field, parentTyp, fieldType
 
 func (ca *costAnalysis) computeCost(ncc nodeCostConfig, parentMultipliers []int) (int, []int) {
 	if ca.opts.ComplexityRange.outside(ncc.complexity) {
-		ca.reportError(fmt.Sprintf("The complexity argument must be between %d and %d", ca.opts.ComplexityRange.Min, ca.opts.ComplexityRange.Max), nil)
+		ca.reportError(fmt.Sprintf("The complexity argument must be %s", ca.opts.ComplexityRange.message()), nil)
 		return ca.opts.DefaultCost, parentMultipliers
 	}
 

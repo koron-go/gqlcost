@@ -511,18 +511,48 @@ func TestComplexityRange(t *testing.T) {
 	}
 }
 
-func TestComplexityRange_Invaild(t *testing.T) {
-	testErrs(t, `query { badComplexityArgument }`, AnalysisOptions{
+func TestComplexityRange_Invalid(t *testing.T) {
+	baseOpts := AnalysisOptions{
 		MaximumCost: 1000,
 		CostMap: CostMap{
 			"Query": {Fields: FieldsCost{
 				"badComplexityArgument": {Complexity: 12},
 			}},
 		},
-		ComplexityRange: ComplexityRange{Min: 100, Max: 1},
-	},
-		"Invalid minimum and maximum complexity",
-		"The complexity argument must be between 100 and 1")
+	}
+
+	tests := []struct {
+		name string
+		cr   ComplexityRange
+		errs []string
+	}{
+		{
+			name: "min greater than max",
+			cr:   ComplexityRange{Min: 100, Max: 1},
+			errs: []string{
+				"Invalid minimum and maximum complexity",
+				"The complexity argument must be between 100 and 1",
+			},
+		},
+		{
+			name: "below min only",
+			cr:   ComplexityRange{Min: 15, Max: 0},
+			errs: []string{"The complexity argument must be greater than or equal to 15"},
+		},
+		{
+			name: "above max only",
+			cr:   ComplexityRange{Min: 0, Max: 3},
+			errs: []string{"The complexity argument must be less than or equal to 3"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := baseOpts
+			opts.ComplexityRange = tc.cr
+			testErrs(t, `query { badComplexityArgument }`, opts, tc.errs...)
+		})
+	}
 }
 
 func TestSeveralMultipliers(t *testing.T) {
