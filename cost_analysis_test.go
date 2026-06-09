@@ -247,6 +247,15 @@ func TestSimple(t *testing.T) {
 	}, 0)
 }
 
+func TestMaximumCostZero(t *testing.T) {
+	testCost(t, `query { customCost }`, AnalysisOptions{
+		MaximumCost: 0,
+		CostMap: CostMap{
+			"Query": {Fields: FieldsCost{"customCost": {Complexity: 8}}},
+		},
+	}, 8)
+}
+
 func TestDefaultCost(t *testing.T) {
 	testCost(t, `query { defaultCost }`, AnalysisOptions{
 		MaximumCost: 100,

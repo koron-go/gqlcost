@@ -76,7 +76,7 @@ func (ca *costAnalysis) opDefLeave(p visitor.VisitFuncParams) (string, interface
 	if !ok {
 		return visitor.ActionSkip, nil
 	}
-	if ca.cost > ca.opts.MaximumCost {
+	if ca.opts.MaximumCost > 0 && ca.cost > ca.opts.MaximumCost {
 		ca.reportError(fmt.Sprintf("The query exceeds the maximum cost of %d. Actual cost is %d", ca.opts.MaximumCost, ca.cost), []ast.Node{od})
 	}
 	//log.Printf("GraphQL COST=%d", ca.cost)
