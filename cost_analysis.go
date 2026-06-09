@@ -14,22 +14,16 @@ type costAnalysis struct {
 	opts AnalysisOptions
 	ctx  *graphql.ValidationContext
 	cost int
-
-	defaultComplexity int
 }
 
 func newCostAnalysis(ctx *graphql.ValidationContext, opts AnalysisOptions) *costAnalysis {
 	ca := &costAnalysis{
-		opts:              opts,
-		ctx:               ctx,
-		defaultComplexity: 1,
+		opts: opts,
+		ctx:  ctx,
 	}
 	cr := ca.opts.ComplexityRange
 	if cr.Min != 0 && cr.Max != 0 && cr.Min > cr.Max {
 		ca.reportError("Invalid minimum and maximum complexity", nil)
-	}
-	if ca.opts.ComplexityRange.Min != 0 {
-		ca.defaultComplexity = ca.opts.ComplexityRange.Min
 	}
 	return ca
 }
@@ -76,7 +70,7 @@ func (ca *costAnalysis) opDefLeave(p visitor.VisitFuncParams) (string, interface
 	if !ok {
 		return visitor.ActionSkip, nil
 	}
-	if ca.cost > ca.opts.MaximumCost {
+	if ca.opts.MaximumCost > 0 && ca.cost > ca.opts.MaximumCost {
 		ca.reportError(fmt.Sprintf("The query exceeds the maximum cost of %d. Actual cost is %d", ca.opts.MaximumCost, ca.cost), []ast.Node{od})
 	}
 	//log.Printf("GraphQL COST=%d", ca.cost)
@@ -100,11 +94,16 @@ func (ca *costAnalysis) getSectionSet(node ast.Node) (*ast.SelectionSet, bool) {
 }
 
 func (ca *costAnalysis) getFieldDefinitionMap(typDef interface{}) graphql.FieldDefinitionMap {
-	if x, ok := typDef.(*graphql.List); ok {
-		typDef = x.OfType
-	}
-	if x, ok := typDef.(*graphql.NonNull); ok {
-		typDef = x.OfType
+	for {
+		if x, ok := typDef.(*graphql.List); ok {
+			typDef = x.OfType
+			continue
+		}
+		if x, ok := typDef.(*graphql.NonNull); ok {
+			typDef = x.OfType
+			continue
+		}
+		break
 	}
 	if x, ok := typDef.(interface {
 		Fields() graphql.FieldDefinitionMap
@@ -221,7 +220,7 @@ func (ca *costAnalysis) getArgsFromCostMap(node *ast.Field, parentTyp, fieldType
 
 func (ca *costAnalysis) computeCost(ncc nodeCostConfig, parentMultipliers []int) (int, []int) {
 	if ca.opts.ComplexityRange.outside(ncc.complexity) {
-		ca.reportError(fmt.Sprintf("The complexity argument must be between %d and %d", ca.opts.ComplexityRange.Min, ca.opts.ComplexityRange.Max), nil)
+		ca.reportError(fmt.Sprintf("The complexity argument must be %s", ca.opts.ComplexityRange.message()), nil)
 		return ca.opts.DefaultCost, parentMultipliers
 	}
 

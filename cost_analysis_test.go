@@ -104,20 +104,49 @@ func init() {
 		},
 	})
 
+	innerType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "InnerType",
+		Fields: graphql.Fields{
+			"name": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+
+	mutationType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Mutation",
+		Fields: graphql.Fields{
+			"setName": &graphql.Field{
+				Type: graphql.String,
+				Args: graphql.FieldConfigArgument{
+					"name": &graphql.ArgumentConfig{Type: graphql.String},
+				},
+			},
+		},
+	})
+
+	subscriptionType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Subscription",
+		Fields: graphql.Fields{
+			"nameChanged": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	})
+
 	queryType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
 		Fields: graphql.Fields{
 			"inner": &graphql.Field{
-				Type: graphql.NewNonNull(graphql.NewObject(graphql.ObjectConfig{
-					Name: "InnerType",
-					Fields: graphql.Fields{
-						"name": &graphql.Field{
-							Type: graphql.String,
-						},
-					},
-				})),
+				Type: graphql.NewNonNull(innerType),
 				Resolve: func(_ graphql.ResolveParams) (interface{}, error) {
 					return map[string]interface{}{"name": "John"}, nil
+				},
+			},
+			"innerList": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.NewList(innerType)),
+				Resolve: func(_ graphql.ResolveParams) (interface{}, error) {
+					return []map[string]interface{}{{"name": "Alice"}}, nil
 				},
 			},
 			"defaultCost": &graphql.Field{
@@ -182,7 +211,11 @@ func init() {
 		},
 	})
 
-	sch, err := graphql.NewSchema(graphql.SchemaConfig{Query: queryType})
+	sch, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query:        queryType,
+		Mutation:     mutationType,
+		Subscription: subscriptionType,
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -239,6 +272,15 @@ func TestSimple(t *testing.T) {
 	}, 0)
 }
 
+func TestMaximumCostZero(t *testing.T) {
+	testCost(t, `query { customCost }`, AnalysisOptions{
+		MaximumCost: 0,
+		CostMap: CostMap{
+			"Query": {Fields: FieldsCost{"customCost": {Complexity: 8}}},
+		},
+	}, 8)
+}
+
 func TestDefaultCost(t *testing.T) {
 	testCost(t, `query { defaultCost }`, AnalysisOptions{
 		MaximumCost: 100,
@@ -256,6 +298,24 @@ func TestNotNullableCost(t *testing.T) {
 				},
 			},
 			"InnerType!": {
+				Fields: FieldsCost{
+					"name": {Complexity: 10},
+				},
+			},
+		},
+	}, 11)
+}
+
+func TestNonNullList(t *testing.T) {
+	testCost(t, `query { innerList { name } }`, AnalysisOptions{
+		MaximumCost: 100,
+		CostMap: CostMap{
+			"Query": {
+				Fields: FieldsCost{
+					"innerList": {Complexity: 1},
+				},
+			},
+			"[InnerType]!": {
 				Fields: FieldsCost{
 					"name": {Complexity: 10},
 				},
@@ -476,18 +536,48 @@ func TestComplexityRange(t *testing.T) {
 	}
 }
 
-func TestComplexityRange_Invaild(t *testing.T) {
-	testErrs(t, `query { badComplexityArgument }`, AnalysisOptions{
+func TestComplexityRange_Invalid(t *testing.T) {
+	baseOpts := AnalysisOptions{
 		MaximumCost: 1000,
 		CostMap: CostMap{
 			"Query": {Fields: FieldsCost{
 				"badComplexityArgument": {Complexity: 12},
 			}},
 		},
-		ComplexityRange: ComplexityRange{Min: 100, Max: 1},
-	},
-		"Invalid minimum and maximum complexity",
-		"The complexity argument must be between 100 and 1")
+	}
+
+	tests := []struct {
+		name string
+		cr   ComplexityRange
+		errs []string
+	}{
+		{
+			name: "min greater than max",
+			cr:   ComplexityRange{Min: 100, Max: 1},
+			errs: []string{
+				"Invalid minimum and maximum complexity",
+				"The complexity argument must be between 100 and 1",
+			},
+		},
+		{
+			name: "below min only",
+			cr:   ComplexityRange{Min: 15, Max: 0},
+			errs: []string{"The complexity argument must be greater than or equal to 15"},
+		},
+		{
+			name: "above max only",
+			cr:   ComplexityRange{Min: 0, Max: 3},
+			errs: []string{"The complexity argument must be less than or equal to 3"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := baseOpts
+			opts.ComplexityRange = tc.cr
+			testErrs(t, `query { badComplexityArgument }`, opts, tc.errs...)
+		})
+	}
 }
 
 func TestSeveralMultipliers(t *testing.T) {
@@ -546,3 +636,42 @@ func TestMultipleRecusive(t *testing.T) {
 }
 
 // TODO: add tests
+
+func TestMutationOperation(t *testing.T) {
+	testCost(t, `mutation { setName(name: "foo") }`, AnalysisOptions{
+		MaximumCost: 100,
+		DefaultCost: 5,
+	}, 5)
+}
+
+func TestSubscriptionOperation(t *testing.T) {
+	testCost(t, `subscription { nameChanged }`, AnalysisOptions{
+		MaximumCost: 100,
+		DefaultCost: 5,
+	}, 5)
+}
+
+func TestInlineFragment_NoTypeCondition(t *testing.T) {
+	testCost(t, `query { inner { ... { name } } }`, AnalysisOptions{
+		MaximumCost: 100,
+		DefaultCost: 3,
+	}, 6)
+}
+
+func TestMultiplierFunc(t *testing.T) {
+	testCost(t, `query { customCostWithResolver(limit: 10) }`, AnalysisOptions{
+		MaximumCost: 100,
+		CostMap: CostMap{
+			"Query": {Fields: FieldsCost{
+				"customCostWithResolver": {
+					UseMultipliers: true,
+					Complexity:     7,
+					MultiplierFunc: func(args map[string]interface{}) int {
+						v, _ := args["limit"].(int)
+						return v
+					},
+				},
+			}},
+		},
+	}, 70)
+}
