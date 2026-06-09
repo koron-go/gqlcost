@@ -245,6 +245,7 @@ func TestDefaultCost(t *testing.T) {
 		DefaultCost: 12,
 	}, 12)
 }
+
 func TestNotNullableCost(t *testing.T) {
 	testCost(t, `query { inner { name } }`, AnalysisOptions{
 		MaximumCost: 100,
@@ -262,6 +263,7 @@ func TestNotNullableCost(t *testing.T) {
 		},
 	}, 11)
 }
+
 func TestCustomCost(t *testing.T) {
 	testCost(t, `query { customCost }`, AnalysisOptions{
 		MaximumCost: 100,
