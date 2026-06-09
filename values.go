@@ -24,11 +24,6 @@ func isNullish(src interface{}) bool {
 		value = value.Elem()
 	}
 	switch value.Kind() {
-	case reflect.String:
-		// if src is ptr type and len(string)=0, it returns false
-		if !value.IsValid() {
-			return true
-		}
 	case reflect.Int:
 		return value.Int() == 0
 	case reflect.Float32, reflect.Float64:
