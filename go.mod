@@ -1,5 +1,5 @@
 module github.com/koron-go/gqlcost
 
-go 1.20
+go 1.25
 
 require github.com/graphql-go/graphql v0.8.1
