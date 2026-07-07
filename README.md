@@ -2,7 +2,6 @@
 
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/koron-go/gqlcost)](https://pkg.go.dev/github.com/koron-go/gqlcost)
 [![Actions/Go](https://github.com/koron-go/gqlcost/workflows/Go/badge.svg)](https://github.com/koron-go/gqlcost/actions?query=workflow%3AGo)
-[![Go Report Card](https://goreportcard.com/badge/github.com/koron-go/gqlcost)](https://goreportcard.com/report/github.com/koron-go/gqlcost)
 
 <strong>gqlcost</strong> provides cost analysis validation rule for
 [graphql-go/graphql][graphql-go]. This is a port of
